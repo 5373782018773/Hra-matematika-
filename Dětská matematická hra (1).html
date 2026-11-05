@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matematika pro šikuly</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Baloo 2', cursive, sans-serif;
+      background: linear-gradient(180deg, #bae6fd 0%, #dcfce7 50%, #a7f3d0 100%);
+      touch-action: manipulation;
+    }
+    .font-baloo {
+      font-family: 'Baloo 2', cursive, sans-serif;
+    }
+    .btn-key {
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      box-shadow: 0 6px 0 #cbd5e1;
+    }
+    .btn-key:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #cbd5e1;
+    }
+    .btn-action {
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      box-shadow: 0 6px 0 #15803d;
+    }
+    .btn-action:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #15803d;
+    }
+    .btn-clear {
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      box-shadow: 0 6px 0 #b91c1c;
+    }
+    .btn-clear:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #b91c1c;
+    }
+
+    @keyframes happy-bounce {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-12px) rotate(-3deg); }
+      75% { transform: translateY(-6px) rotate(3deg); }
+    }
+    .animate-happy {
+      animation: happy-bounce 1s infinite ease-in-out;
+    }
+
+    @keyframes mud-shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px) rotate(-2deg); }
+      40%, 80% { transform: translateX(8px) rotate(2deg); }
+    }
+    .animate-shake {
+      animation: mud-shake 0.5s ease-in-out;
+    }
+
+    /* Confetti Canvas overlay */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between p-3 sm:p-5 select-none">
+
+  <!-- CONFETTI CANVAS -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- HEADER & SCOREBOARD -->
+  <header class="max-w-xl mx-auto w-full bg-white/90 backdrop-blur rounded-3xl p-3 sm:p-4 shadow-lg border-4 border-emerald-400 mb-3 flex justify-between items-center">
+    <div>
+      <h1 class="text-xl sm:text-2xl font-extrabold font-baloo text-emerald-600 leading-tight">Počítání pro šikuly</h1>
+      <p class="text-xs sm:text-sm text-slate-500 font-bold">Cíl: 50 bodů 🏆</p>
+    </div>
+    <div class="flex items-center gap-2 bg-amber-100 border-2 border-amber-400 px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl shadow-inner">
+      <span class="text-2xl sm:text-3xl">⭐</span>
+      <div class="text-right">
+        <span class="block text-xs uppercase font-extrabold tracking-wider text-amber-800">Body</span>
+        <span id="score" class="text-2xl sm:text-3xl font-extrabold font-baloo text-amber-600 leading-none">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN GAME AREA -->
+  <main class="max-w-xl mx-auto w-full flex-1 flex flex-col justify-center items-center gap-3">
+
+    <!-- CHARACTER & FEEDBACK DISPLAY -->
+    <div class="w-full bg-white/95 rounded-3xl p-4 shadow-xl border-4 border-amber-300 text-center flex flex-col items-center justify-center min-h-[220px] relative overflow-hidden">
+      
+      <!-- DEFAULT / IDLE STATE -->
+      <div id="state-idle" class="flex flex-col items-center gap-2">
+        <svg class="w-24 h-24" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="#fef08a" stroke="#facc15" stroke-width="4"/>
+          <circle cx="35" cy="40" r="6" fill="#334155"/>
+          <circle cx="65" cy="40" r="6" fill="#334155"/>
+          <path d="M 30 60 Q 50 80 70 60" fill="none" stroke="#334155" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+        <p class="text-lg font-bold text-slate-600">Vyřeš příklad a získej body!</p>
+      </div>
+
+      <!-- CORRECT ANSWER STATE (HAPPY HORSE) -->
+      <div id="state-correct" class="hidden flex-col items-center gap-2">
+        <div class="animate-happy">
+          <svg class="w-28 h-28" viewBox="0 0 120 120">
+            <!-- Horse Head -->
+            <path d="M 35 95 C 20 80, 25 45, 45 35 C 50 20, 70 20, 80 35 C 95 30, 105 45, 95 65 C 90 75, 75 95, 35 95 Z" fill="#b45309" stroke="#78350f" stroke-width="3"/>
+            <!-- Mane -->
+            <path d="M 45 35 C 40 15, 60 10, 65 25 C 70 10, 85 15, 80 35" fill="#451a03"/>
+            <!-- Ears -->
+            <polygon points="45,35 40,15 55,25" fill="#b45309" stroke="#78350f" stroke-width="2"/>
+            <polygon points="65,30 70,10 78,25" fill="#b45309" stroke="#78350f" stroke-width="2"/>
+            <!-- Muzzle -->
+            <ellipse cx="80" cy="65" rx="16" ry="14" fill="#fde68a" stroke="#78350f" stroke-width="2"/>
+            <!-- Nostril -->
+            <circle cx="84" cy="63" r="3" fill="#78350f"/>
+            <!-- Eye (Happy arc) -->
+            <path d="M 50 42 Q 56 34 62 42" fill="none" stroke="#1e293b" stroke-width="4" stroke-linecap="round"/>
+            <!-- Blushing -->
+            <circle cx="60" cy="55" r="6" fill="#f43f5e" opacity="0.5"/>
+            <!-- Sparks -->
+            <text x="10" y="30" font-size="20">✨</text>
+            <text x="90" y="30" font-size="20">🌟</text>
+          </svg>
+        </div>
+        <p class="text-xl font-extrabold font-baloo text-emerald-600">Výborně! Spokojený koník skáče radostí! 🐴✨</p>
+        <button onclick="nextAfterFeedback()" class="btn-action bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold font-baloo text-xl px-8 py-2.5 rounded-2xl border-2 border-emerald-700 shadow-md">
+          Další příklad ➔
+        </button>
+      </div>
+
+      <!-- INCORRECT ANSWER STATE (PIG IN MUD) -->
+      <div id="state-incorrect" class="hidden flex-col items-center gap-2">
+        <div class="animate-shake">
+          <svg class="w-28 h-28" viewBox="0 0 120 120">
+            <!-- Mud pool -->
+            <ellipse cx="60" cy="95" rx="55" ry="18" fill="#78350f" opacity="0.85"/>
+            <ellipse cx="40" cy="98" rx="20" ry="8" fill="#451a03"/>
+            <!-- Pig Head -->
+            <circle cx="60" cy="60" r="35" fill="#f472b6" stroke="#db2777" stroke-width="3"/>
+            <!-- Ears -->
+            <polygon points="30,40 20,15 45,30" fill="#f472b6" stroke="#db2777" stroke-width="2"/>
+            <polygon points="90,40 100,15 75,30" fill="#f472b6" stroke="#db2777" stroke-width="2"/>
+            <!-- Snout -->
+            <ellipse cx="60" cy="65" rx="14" ry="10" fill="#f43f5e" stroke="#9f1239" stroke-width="2"/>
+            <circle cx="54" cy="65" r="2.5" fill="#9f1239"/>
+            <circle cx="66" cy="65" r="2.5" fill="#9f1239"/>
+            <!-- Sad Eyes -->
+            <circle cx="45" cy="50" r="4" fill="#1e293b"/>
+            <circle cx="75" cy="50" r="4" fill="#1e293b"/>
+            <path d="M 40 43 Q 45 47 50 44" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <path d="M 80 43 Q 75 47 70 44" fill="none" stroke="#1e293b" stroke-width="2"/>
+            <!-- Sad Mouth -->
+            <path d="M 52 80 Q 60 74 68 80" fill="none" stroke="#9f1239" stroke-width="3" stroke-linecap="round"/>
+            <!-- Mud Splatters -->
+            <circle cx="40" cy="68" r="6" fill="#571c05"/>
+            <circle cx="78" cy="58" r="5" fill="#571c05"/>
+            <circle cx="60" cy="38" r="4" fill="#571c05"/>
+            <path d="M 25 85 C 30 80, 40 82, 45 88 Z" fill="#571c05"/>
+          </svg>
+        </div>
+        <div class="text-center">
+          <p class="text-xl font-extrabold font-baloo text-amber-800">Nevadí! Prasátko skočilo do bláta 🐷</p>
+          <p class="text-sm font-bold text-rose-600">Nevzdávej to a zkus to znovu!</p>
+        </div>
+        <button onclick="retryAfterIncorrect()" class="btn-clear bg-amber-600 hover:bg-amber-700 text-white font-extrabold font-baloo text-xl px-8 py-2.5 rounded-2xl border-2 border-amber-800 shadow-md">
+          Zkusit znovu 🔄
+        </button>
+      </div>
+
+    </div>
+
+    <!-- MATH PROBLEM DISPLAY CARD -->
+    <div class="w-full bg-white rounded-3xl p-4 sm:p-5 shadow-xl border-4 border-sky-300 text-center flex flex-col items-center justify-center min-h-[130px]">
+      
+      <!-- Variable Hint (e.g. "a = 7") -->
+      <div id="variable-hint" class="hidden mb-1 px-4 py-1 bg-amber-100 text-amber-800 rounded-full text-base sm:text-lg font-bold border border-amber-300">
+        Když <span id="var-name" class="font-baloo font-extrabold text-amber-900">a</span> = <span id="var-val" class="font-baloo font-extrabold text-amber-900">7</span>
+      </div>
+
+      <!-- TYPE 1: NUMBER INPUT EXPRESSION -->
+      <div id="display-numeric" class="flex items-center justify-center gap-3 text-3xl sm:text-5xl font-extrabold font-baloo text-slate-800 my-1">
+        <span id="problem-text">7 + 6</span>
+        <span>=</span>
+        <div id="user-input-box" class="w-20 sm:w-28 h-12 sm:h-16 bg-sky-50 border-4 border-dashed border-sky-400 rounded-2xl flex items-center justify-center text-sky-700 font-baloo font-extrabold shadow-inner">
+          <span id="user-input-text"></span>
+        </div>
+      </div>
+
+      <!-- TYPE 2: COMPARISON EXPRESSION (>, <, =) -->
+      <div id="display-compare" class="hidden flex items-center justify-center gap-2 sm:gap-4 text-2xl sm:text-4xl font-extrabold font-baloo text-slate-800 my-1">
+        <span id="comp-left" class="bg-amber-50 px-3 py-1.5 rounded-xl border-2 border-amber-200">13 - 6</span>
+        <div id="comp-sign-box" class="w-14 sm:w-20 h-12 sm:h-16 bg-sky-50 border-4 border-dashed border-sky-400 rounded-2xl flex items-center justify-center text-sky-700 font-baloo font-extrabold shadow-inner text-3xl sm:text-4xl">
+          <span id="comp-sign-text">?</span>
+        </div>
+        <span id="comp-right" class="bg-amber-50 px-3 py-1.5 rounded-xl border-2 border-amber-200">3 + 3</span>
+      </div>
+
+    </div>
+
+    <!-- CONTROLS CONTAINER -->
+    <div class="w-full bg-white/90 backdrop-blur rounded-3xl p-3 sm:p-4 shadow-xl border-4 border-emerald-300">
+      
+      <!-- KEYPAD FOR NUMERIC PROBLEMS -->
+      <div id="keypad-numeric" class="grid grid-cols-3 gap-2 sm:gap-3 max-w-sm mx-auto">
+        <button onclick="pressNum('1')" class="btn-key bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold font-baloo text-2xl sm:text-3xl py-3 rounded-2xl border-2 border-slate-300">1</button>
+        <button onclick="pressNum('2')" class="btn-key bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold font-baloo text-2xl sm:text-3xl py-3 rounded-2xl border-2 border-slate-300">2</button>
+        <button onclick="pressNum('3')" class="btn-key bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold font-baloo text-2xl sm:text-3xl py-3 rounded-2xl border-2 border-slate-300">3</button>
+        <button onclick="pressNum('4')" class="btn-key bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold font-baloo text-2xl sm:text-3xl py-3 rounded-2xl border-2 border-slate-300">4</button>
+        <button onclick="pressNum('5')" class="btn-key bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold font-baloo text-2xl sm:text-3xl py-3 rounded-2xl border-2 border-slate-300">5</button>
+        <button onclick="pressNum('6')" class="btn-key bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold font-baloo text-2xl sm:text-3xl py-3 rounded-2xl border-2 border-slate-300">6</button>
+        <button onclick="pressNum('7')" class="btn-key bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold font-baloo text-2xl sm:text-3xl py-3 rounded-2xl border-2 border-slate-300">7</button>
+        <button onclick="pressNum('8')" class="btn-key bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold font-baloo text-2xl sm:text-3xl py-3 rounded-2xl border-2 border-slate-300">8</button>
+        <button onclick="pressNum('9')" class="btn-key bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold font-baloo text-2xl sm:text-3xl py-3 rounded-2xl border-2 border-slate-300">9</button>
+        <button onclick="clearInput()" class="btn-clear bg-red-500 hover:bg-red-600 text-white font-extrabold font-baloo text-xl sm:text-2xl py-3 rounded-2xl border-2 border-red-700">⌫ Smazat</button>
+        <button onclick="pressNum('0')" class="btn-key bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold font-baloo text-2xl sm:text-3xl py-3 rounded-2xl border-2 border-slate-300">0</button>
+        <button onclick="checkAnswer()" class="btn-action bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold font-baloo text-xl sm:text-2xl py-3 rounded-2xl border-2 border-emerald-700">OK ➔</button>
+      </div>
+
+      <!-- BUTTONS FOR COMPARISON PROBLEMS -->
+      <div id="keypad-compare" class="hidden flex justify-center gap-3 sm:gap-6 max-w-sm mx-auto py-2">
+        <button onclick="checkCompare('<')" class="btn-key bg-indigo-500 hover:bg-indigo-600 text-white font-extrabold font-baloo text-4xl sm:text-5xl w-24 h-24 rounded-3xl border-4 border-indigo-700 flex items-center justify-center shadow-lg">
+          &lt;
+        </button>
+        <button onclick="checkCompare('=')" class="btn-key bg-amber-500 hover:bg-amber-600 text-white font-extrabold font-baloo text-4xl sm:text-5xl w-24 h-24 rounded-3xl border-4 border-amber-700 flex items-center justify-center shadow-lg">
+          =
+        </button>
+        <button onclick="checkCompare('>')" class="btn-key bg-indigo-500 hover:bg-indigo-600 text-white font-extrabold font-baloo text-4xl sm:text-5xl w-24 h-24 rounded-3xl border-4 border-indigo-700 flex items-center justify-center shadow-lg">
+          &gt;
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- CELEBRATION MODAL (RESET AT 50 POINTS) -->
+  <div id="win-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 border-4 border-yellow-400 max-w-md w-full text-center shadow-2xl relative z-10">
+      <div class="text-6xl mb-2">🏆🐴🎉</div>
+      <h2 class="text-3xl font-extrabold font-baloo text-amber-500 mb-1">GRATULUJEME!</h2>
+      <p class="text-lg font-bold text-slate-700 mb-3">Dosáhl/a jsi <span class="text-emerald-600 font-baloo font-extrabold text-2xl">50 bodů</span>!</p>
+      <p class="text-slate-600 mb-6 font-bold">Jsi úžasný matematik! Koník má z tebe obrovskou radost!</p>
+      <button onclick="resetGame()" class="w-full btn-action bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold font-baloo text-2xl py-4 rounded-2xl border-2 border-emerald-700 shadow-lg">
+        Hrát znovu od 0 bodů 🚀
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // --- PROBLEMS FROM BOTH WORKSHEETS (D4 & D3) ---
+    const worksheetProblems = [
+      // === LIST D4 (Numeric & Variables) ===
+      { type: "numeric", text: "a + 6", varName: "a", varVal: 7, answer: 13 },
+      { type: "numeric", text: "a + 9", varName: "a", varVal: 7, answer: 16 },
+      { type: "numeric", text: "b - 9", varName: "b", varVal: 13, answer: 4 },
+      { type: "numeric", text: "b - 8", varName: "b", varVal: 13, answer: 5 },
+      { type: "numeric", text: "c + 3", varName: "c", varVal: 9, answer: 12 },
+      { type: "numeric", text: "c + 5", varName: "c", varVal: 9, answer: 14 },
+      { type: "numeric", text: "d - 5", varName: "d", varVal: 12, answer: 7 },
+      { type: "numeric", text: "d - 7", varName: "d", varVal: 12, answer: 5 },
+      { type: "numeric", text: "e + 7", varName: "e", varVal: 8, answer: 15 },
+      { type: "numeric", text: "e + 4", varName: "e", varVal: 8, answer: 12 },
+      { type: "numeric", text: "f - 4", varName: "f", varVal: 11, answer: 7 },
+      { type: "numeric", text: "f - 6", varName: "f", varVal: 11, answer: 5 },
+      { type: "numeric", text: "18 - 7", answer: 11 },
+      { type: "numeric", text: "8 + 8", answer: 16 },
+      { type: "numeric", text: "13 - 5", answer: 8 },
+      { type: "numeric", text: "7 + 7", answer: 14 },
+      { type: "numeric", text: "11 - 9", answer: 2 },
+      { type: "numeric", text: "2 + 8", answer: 10 },
+      { type: "numeric", text: "9 - 2", answer: 7 },
+      { type: "numeric", text: "7 + 9", answer: 16 },
+      { type: "numeric", text: "13 - 8", answer: 5 },
+      { type: "numeric", text: "9 + 3", answer: 12 },
+      { type: "numeric", text: "1 - 0", answer: 1 },
+      { type: "numeric", text: "11 + 2", answer: 13 },
+      { type: "numeric", text: "13 - 3", answer: 10 },
+      { type: "numeric", text: "4 + 16", answer: 20 },
+      { type: "numeric", text: "20 - 14", answer: 6 },
+      { type: "numeric", text: "7 + 4", answer: 11 },
+      { type: "numeric", text: "17 - 17", answer: 0 },
+      { type: "numeric", text: "8 + 12", answer: 20 },
+      { type: "numeric", text: "12 - 9", answer: 3 },
+      { type: "numeric", text: "4 + 6", answer: 10 },
+      { type: "numeric", text: "13 - 7", answer: 6 },
+
+      // === LIST D3 (Section 1: Numeric) ===
+      { type: "numeric", text: "6 + 13", answer: 19 },
+      { type: "numeric", text: "16 - 11", answer: 5 },
+      { type: "numeric", text: "7 + 4", answer: 11 },
+      { type: "numeric", text: "13 - 9", answer: 4 },
+      { type: "numeric", text: "9 + 8", answer: 17 },
+      { type: "numeric", text: "18 - 10", answer: 8 },
+      { type: "numeric", text: "1 + 4", answer: 5 },
+      { type: "numeric", text: "5 - 0", answer: 5 },
+      { type: "numeric", text: "4 + 10", answer: 14 },
+      { type: "numeric", text: "18 - 16", answer: 2 },
+      { type: "numeric", text: "9 + 9", answer: 18 },
+      { type: "numeric", text: "12 - 6", answer: 6 },
+      { type: "numeric", text: "11 + 7", answer: 18 },
+      { type: "numeric", text: "2 - 1", answer: 1 },
+      { type: "numeric", text: "7 + 8", answer: 15 },
+      { type: "numeric", text: "18 - 2", answer: 16 },
+      { type: "numeric", text: "15 + 0", answer: 15 },
+      { type: "numeric", text: "13 - 4", answer: 9 },
+      { type: "numeric", text: "8 + 6", answer: 14 },
+      { type: "numeric", text: "11 - 6", answer: 5 },
+      { type: "numeric", text: "7 + 6", answer: 13 },
+      { type: "numeric", text: "13 - 6", answer: 7 },
+      { type: "numeric", text: "5 + 12", answer: 17 },
+      { type: "numeric", text: "17 - 5", answer: 12 },
+      { type: "numeric", text: "9 + 2", answer: 11 },
+      { type: "numeric", text: "12 - 5", answer: 7 },
+      { type: "numeric", text: "14 + 3", answer: 17 },
+
+      // === LIST D3 (Section 2: Comparisons >, <, =) ===
+      { type: "compare", leftText: "13 - 6", rightText: "3 + 3", leftVal: 7, rightVal: 6, answer: ">" },
+      { type: "compare", leftText: "8 + 6", rightText: "13 - 5", leftVal: 14, rightVal: 8, answer: ">" },
+      { type: "compare", leftText: "12 - 9", rightText: "8 + 4", leftVal: 3, rightVal: 12, answer: "<" },
+      { type: "compare", leftText: "9 + 9", rightText: "20 - 1", leftVal: 18, rightVal: 19, answer: "<" },
+      { type: "compare", leftText: "13 - 8", rightText: "4 + 1", leftVal: 5, rightVal: 5, answer: "=" },
+      { type: "compare", leftText: "6 + 3", rightText: "12 - 7", leftVal: 9, rightVal: 5, answer: ">" },
+      { type: "compare", leftText: "7 + 8", rightText: "11 - 4", leftVal: 15, rightVal: 7, answer: ">" },
+      { type: "compare", leftText: "12 - 5", rightText: "7 + 7", leftVal: 7, rightVal: 14, answer: "<" },
+      { type: "compare", leftText: "5 + 4", rightText: "16 - 6", leftVal: 9, rightVal: 10, answer: "<" },
+      { type: "compare", leftText: "13 - 4", rightText: "2 + 6", leftVal: 9, rightVal: 8, answer: ">" },
+      { type: "compare", leftText: "8 + 8", rightText: "13 - 9", leftVal: 16, rightVal: 4, answer: ">" },
+      { type: "compare", leftText: "20 - 3", rightText: "8 + 9", leftVal: 17, rightVal: 17, answer: "=" },
+      { type: "compare", leftText: "18 - 2", rightText: "7 + 6", leftVal: 16, rightVal: 13, answer: ">" },
+      { type: "compare", leftText: "8 + 3", rightText: "15 - 3", leftVal: 11, rightVal: 12, answer: "<" },
+      { type: "compare", leftText: "11 - 3", rightText: "3 + 5", leftVal: 8, rightVal: 8, answer: "=" },
+      { type: "compare", leftText: "9 + 8", rightText: "12 - 4", leftVal: 17, rightVal: 8, answer: ">" },
+      { type: "compare", leftText: "13 - 7", rightText: "9 + 2", leftVal: 6, rightVal: 11, answer: "<" },
+      { type: "compare", leftText: "7 + 9", rightText: "19 - 3", leftVal: 16, rightVal: 16, answer: "=" }
+    ];
+
+    let score = 0;
+    let currentProblem = null;
+    let currentInput = "";
+    let isLocked = false;
+
+    // --- WEB AUDIO SYNTHESIZER ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
+    }
+
+    function playSound(type) {
+      try {
+        initAudio();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const now = audioCtx.currentTime;
+
+        if (type === 'click') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(450, now);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'correct') {
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const noteOsc = audioCtx.createOscillator();
+            const noteGain = audioCtx.createGain();
+            noteOsc.type = 'triangle';
+            noteOsc.frequency.setValueAtTime(freq, now + idx * 0.08);
+            noteGain.gain.setValueAtTime(0.15, now + idx * 0.08);
+            noteGain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.15);
+            noteOsc.connect(noteGain);
+            noteGain.connect(audioCtx.destination);
+            noteOsc.start(now + idx * 0.08);
+            noteOsc.stop(now + idx * 0.08 + 0.15);
+          });
+        } else if (type === 'wrong') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.3);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === 'win') {
+          const notes = [440, 554.37, 659.25, 880];
+          notes.forEach((freq, idx) => {
+            const noteOsc = audioCtx.createOscillator();
+            const noteGain = audioCtx.createGain();
+            noteOsc.type = 'square';
+            noteOsc.frequency.setValueAtTime(freq, now + idx * 0.12);
+            noteGain.gain.setValueAtTime(0.1, now + idx * 0.12);
+            noteGain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.25);
+            noteOsc.connect(noteGain);
+            noteGain.connect(audioCtx.destination);
+            noteOsc.start(now + idx * 0.12);
+            noteOsc.stop(now + idx * 0.12 + 0.25);
+          });
+        }
+      } catch (e) {}
+    }
+
+    // --- GAME ENGINE ---
+
+    function getRandomProblem() {
+      const idx = Math.floor(Math.random() * worksheetProblems.length);
+      return worksheetProblems[idx];
+    }
+
+    function renderProblem() {
+      currentProblem = getRandomProblem();
+      currentInput = "";
+      updateInputDisplay();
+
+      const varHint = document.getElementById('variable-hint');
+      const numericDisplay = document.getElementById('display-numeric');
+      const compareDisplay = document.getElementById('display-compare');
+      const numericKeypad = document.getElementById('keypad-numeric');
+      const compareKeypad = document.getElementById('keypad-compare');
+
+      if (currentProblem.type === "numeric") {
+        compareDisplay.classList.add('hidden');
+        compareKeypad.classList.add('hidden');
+        numericDisplay.classList.remove('hidden');
+        numericKeypad.classList.remove('hidden');
+
+        if (currentProblem.varName) {
+          document.getElementById('var-name').innerText = currentProblem.varName;
+          document.getElementById('var-val').innerText = currentProblem.varVal;
+          varHint.classList.remove('hidden');
+        } else {
+          varHint.classList.add('hidden');
+        }
+
+        document.getElementById('problem-text').innerText = currentProblem.text;
+      } else if (currentProblem.type === "compare") {
+        varHint.classList.add('hidden');
+        numericDisplay.classList.add('hidden');
+        numericKeypad.classList.add('hidden');
+        compareDisplay.classList.remove('hidden');
+        compareKeypad.classList.remove('hidden');
+
+        document.getElementById('comp-left').innerText = currentProblem.leftText;
+        document.getElementById('comp-right').innerText = currentProblem.rightText;
+        document.getElementById('comp-sign-text').innerText = "?";
+      }
+    }
+
+    function updateInputDisplay() {
+      document.getElementById('user-input-text').innerText = currentInput;
+    }
+
+    function pressNum(num) {
+      if (isLocked) return;
+      playSound('click');
+      if (currentInput.length < 2) {
+        currentInput += num;
+        updateInputDisplay();
+      }
+    }
+
+    function clearInput() {
+      if (isLocked) return;
+      playSound('click');
+      currentInput = "";
+      updateInputDisplay();
+    }
+
+    function setStateDisplay(state) {
+      document.getElementById('state-idle').classList.add('hidden');
+      document.getElementById('state-correct').classList.add('hidden');
+      document.getElementById('state-incorrect').classList.add('hidden');
+
+      if (state === 'idle') {
+        document.getElementById('state-idle').classList.remove('hidden');
+      } else if (state === 'correct') {
+        document.getElementById('state-correct').classList.remove('hidden');
+      } else if (state === 'incorrect') {
+        document.getElementById('state-incorrect').classList.remove('hidden');
+      }
+    }
+
+    function handleResult(isCorrect) {
+      isLocked = true;
+      if (isCorrect) {
+        playSound('correct');
+        score += 5;
+        document.getElementById('score').innerText = score;
+        setStateDisplay('correct');
+
+        if (score >= 50) {
+          triggerConfetti();
+          setTimeout(() => {
+            playSound('win');
+            document.getElementById('win-modal').classList.remove('hidden');
+          }, 500);
+        }
+      } else {
+        playSound('wrong');
+        setStateDisplay('incorrect');
+      }
+    }
+
+    function checkAnswer() {
+      if (isLocked || currentInput === "") return;
+      const userVal = parseInt(currentInput, 10);
+      if (isNaN(userVal)) return;
+
+      handleResult(userVal === currentProblem.answer);
+    }
+
+    function checkCompare(sign) {
+      if (isLocked) return;
+      playSound('click');
+      document.getElementById('comp-sign-text').innerText = sign;
+      handleResult(sign === currentProblem.answer);
+    }
+
+    function nextAfterFeedback() {
+      playSound('click');
+      setStateDisplay('idle');
+      renderProblem();
+      isLocked = false;
+    }
+
+    function retryAfterIncorrect() {
+      playSound('click');
+      setStateDisplay('idle');
+      currentInput = "";
+      updateInputDisplay();
+      document.getElementById('comp-sign-text').innerText = "?";
+      isLocked = false;
+    }
+
+    function resetGame() {
+      score = 0;
+      document.getElementById('score').innerText = score;
+      document.getElementById('win-modal').classList.add('hidden');
+      setStateDisplay('idle');
+      isLocked = false;
+      renderProblem();
+    }
+
+    // --- KEYBOARD CONTROLS ---
+    window.addEventListener('keydown', (e) => {
+      if (isLocked) {
+        if (e.key === 'Enter') {
+          const isCorrectVisible = !document.getElementById('state-correct').classList.contains('hidden');
+          const isIncorrectVisible = !document.getElementById('state-incorrect').classList.contains('hidden');
+          if (isCorrectVisible) nextAfterFeedback();
+          else if (isIncorrectVisible) retryAfterIncorrect();
+        }
+        return;
+      }
+
+      if (currentProblem.type === "numeric") {
+        if (e.key >= '0' && e.key <= '9') {
+          pressNum(e.key);
+        } else if (e.key === 'Backspace' || e.key === 'Delete') {
+          clearInput();
+        } else if (e.key === 'Enter') {
+          checkAnswer();
+        }
+      } else if (currentProblem.type === "compare") {
+        if (e.key === '<' || e.key === ',') checkCompare('<');
+        else if (e.key === '>' || e.key === '.') checkCompare('>');
+        else if (e.key === '=') checkCompare('=');
+      }
+    });
+
+    // --- SIMPLE CONFETTI SYSTEM ---
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function triggerConfetti() {
+      particles = [];
+      const colors = ['#f43f5e', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899'];
+      for (let i = 0; i < 120; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 16,
+          vy: (Math.random() - 0.7) * 16,
+          size: Math.random() * 10 + 5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          vRot: (Math.random() - 0.5) * 10
+        });
+      }
+      animateConfetti();
+    }
+
+    function animateConfetti() {
+      if (particles.length === 0) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach((p, index) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.3;
+        p.rotation += p.vRot;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+
+        if (p.y > canvas.height) {
+          particles.splice(index, 1);
+        }
+      });
+
+      if (particles.length > 0) {
+        requestAnimationFrame(animateConfetti);
+      }
+    }
+
+    window.onload = function() {
+      renderProblem();
+    };
+  </script>
+</body>
+</html>
